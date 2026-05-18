@@ -201,6 +201,30 @@ export const useChatStore = defineStore('chat', () => {
     generateAIResponse(dialogId);
   }
 
+  function regenerateMessage(messageId: string) {
+    const dialog = dialogs.value.find(d => d.id === activeDialogId.value);
+    if (!dialog) return;
+
+    // Находим индекс сообщения бота
+    const botMessageIndex = dialog.messages.findIndex(m => m.id === messageId);
+    if (botMessageIndex === -1 || dialog.messages[botMessageIndex].isUser) return;
+
+    // Находим последнее сообщение пользователя перед этим ответом бота
+    let lastUserMessageIndex = botMessageIndex - 1;
+    while (lastUserMessageIndex >= 0 && !dialog.messages[lastUserMessageIndex].isUser) {
+      lastUserMessageIndex--;
+    }
+
+    if (lastUserMessageIndex < 0) return;
+
+    // Удаляем текущий ответ бота
+    dialog.messages.splice(botMessageIndex, 1);
+    triggerReactivity();
+
+    // Генерируем новый ответ
+    generateAIResponse(dialog.id);
+  }
+
   async function generateAIResponse(dialogId: string) {
     isGenerating.value = false;
     isWaitingForResponse.value = true;
@@ -322,6 +346,7 @@ export const useChatStore = defineStore('chat', () => {
     showFullscreenGraph,
     createDialog,
     sendMessage,
+    regenerateMessage,
     editMessage,
     deleteDialog,
     clearAllDialogs,
