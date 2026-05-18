@@ -1,6 +1,7 @@
 // src/stores/chatStore.ts
 import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue';
+import { streamChatCompletion } from '~/utils/openRouter';
 
 export interface Message {
   id: string;
@@ -91,6 +92,7 @@ export const useChatStore = defineStore('chat', () => {
   const showFullscreenGraph = ref(false);
   const selectedModel = ref<string>('deepseek/deepseek-r1');
   const temperature = ref<number>(0.7);
+  let abortController: AbortController | null = null;
 
   // Загрузить настройки из localStorage
   const savedSettings = localStorage.getItem(`${STORAGE_KEY}-settings`);
@@ -194,10 +196,9 @@ export const useChatStore = defineStore('chat', () => {
       dialog.title = content.slice(0, 50) + (content.length > 50 ? '...' : '');
     }
 
-    // Триггерим реактивность для глубоких изменений
     triggerReactivity();
 
-    // Симулируем ответ нейросети
+    // Запрашиваем ответ от нейросети
     generateAIResponse(dialogId);
   }
 
@@ -205,11 +206,9 @@ export const useChatStore = defineStore('chat', () => {
     const dialog = dialogs.value.find(d => d.id === activeDialogId.value);
     if (!dialog) return;
 
-    // Находим индекс сообщения бота
     const botMessageIndex = dialog.messages.findIndex(m => m.id === messageId);
     if (botMessageIndex === -1 || dialog.messages[botMessageIndex].isUser) return;
 
-    // Находим последнее сообщение пользователя перед этим ответом бота
     let lastUserMessageIndex = botMessageIndex - 1;
     while (lastUserMessageIndex >= 0 && !dialog.messages[lastUserMessageIndex].isUser) {
       lastUserMessageIndex--;
@@ -225,62 +224,135 @@ export const useChatStore = defineStore('chat', () => {
     generateAIResponse(dialog.id);
   }
 
-  async function generateAIResponse(dialogId: string) {
-    isGenerating.value = false;
-    isWaitingForResponse.value = true;
+  function buildMessagesArray(dialog: Dialog): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
+    const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [];
 
-    const dialog = dialogs.value.find(d => d.id === dialogId);
-    if (!dialog) {
-      isWaitingForResponse.value = false;
-      return;
+    // Добавляем системный промпт
+    messages.push({
+      role: 'system',
+      content: 'Ты полезный AI-ассистент Bubble AI. Отвечай на русском языке, если пользователь не просит иначе.',
+    });
+
+    // Добавляем историю сообщений
+    for (const msg of dialog.messages) {
+      if (msg.isUser) {
+        messages.push({ role: 'user', content: msg.content });
+      } else {
+        messages.push({ role: 'assistant', content: msg.content });
+      }
     }
 
-    // Имитация задержки перед ответом (как будто сервер думает)
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-
-    const responseText = getMockAIResponse();
-    const botMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      dialogId,
-      content: '',
-      isUser: false,
-      timestamp: new Date(),
-    };
-
-    dialog.messages.push(botMessage);
-    isWaitingForResponse.value = false;
-    isGenerating.value = true;
-    triggerReactivity();
-
-    // Имитация печати с правильной реактивностью
-    for (let i = 0; i < responseText.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 30 + Math.random() * 50));
-
-      // Проверяем, не остановлена ли генерация
-      if (!isGenerating.value) {
-        // Если остановлена, показываем то, что успели сгенерировать
-        break;
-      }
-
-      const messageIndex = dialog.messages.findIndex(m => m.id === botMessage.id);
-      if (messageIndex !== -1) {
-        dialog.messages[messageIndex] = {
-          ...dialog.messages[messageIndex],
-          content: responseText.slice(0, i + 1),
-          timestamp: new Date(dialog.messages[messageIndex].timestamp), // Восстанавливаем Date
-        };
-      }
-
-      triggerReactivity();
-    }
-
-    dialog.lastMessage = dialog.messages[dialog.messages.length - 1];
-    isGenerating.value = false;
-    triggerReactivity();
+    return messages;
   }
 
-  // Добавить новую функцию:
+  async function generateAIResponse(dialogId: string) {
+    const dialog = dialogs.value.find(d => d.id === dialogId);
+    if (!dialog) return;
+
+    isWaitingForResponse.value = true;
+    isGenerating.value = true; // Сразу ставим true, чтобы чанки не игнорировались
+
+    // Создаем AbortController для возможности остановки
+    abortController = new AbortController();
+
+    // Строим массив сообщений для API
+    const messages = buildMessagesArray(dialog);
+
+    let botMessage: Message | null = null;
+    let hasReceivedContent = false;
+
+    // Отправляем запрос
+    await streamChatCompletion(
+      messages,
+      selectedModel.value,
+      temperature.value,
+      // onChunk
+      (content: string) => {
+        // Создаем сообщение только при первом чанке
+        if (!hasReceivedContent) {
+          hasReceivedContent = true;
+          isWaitingForResponse.value = false;
+
+          botMessage = {
+            id: (Date.now() + 1).toString(),
+            dialogId,
+            content: content,
+            isUser: false,
+            timestamp: new Date(),
+          };
+
+          dialog.messages.push(botMessage);
+          triggerReactivity();
+          return;
+        }
+
+        // Добавляем контент к существующему сообщению
+        if (botMessage) {
+          const messageIndex = dialog.messages.findIndex(m => m.id === botMessage!.id);
+          if (messageIndex !== -1) {
+            dialog.messages[messageIndex] = {
+              ...dialog.messages[messageIndex],
+              content: dialog.messages[messageIndex].content + content,
+              timestamp: new Date(dialog.messages[messageIndex].timestamp),
+            };
+            triggerReactivity();
+          }
+        }
+      },
+      // onError
+      (error: string) => {
+        console.error('AI response error:', error);
+
+        // Если сообщение еще не создано, создаем с ошибкой
+        if (!hasReceivedContent) {
+          isWaitingForResponse.value = false;
+          isGenerating.value = false;
+
+          botMessage = {
+            id: (Date.now() + 1).toString(),
+            dialogId,
+            content: `❌ ${error}`,
+            isUser: false,
+            timestamp: new Date(),
+          };
+
+          dialog.messages.push(botMessage);
+          triggerReactivity();
+          return;
+        }
+
+        // Добавляем ошибку к существующему сообщению
+        if (botMessage) {
+          const messageIndex = dialog.messages.findIndex(m => m.id === botMessage!.id);
+          if (messageIndex !== -1) {
+            dialog.messages[messageIndex] = {
+              ...dialog.messages[messageIndex],
+              content: dialog.messages[messageIndex].content + `\n\n❌ ${error}`,
+              timestamp: new Date(dialog.messages[messageIndex].timestamp),
+            };
+            triggerReactivity();
+          }
+        }
+      },
+      // onComplete
+      () => {
+        if (botMessage) {
+          dialog.lastMessage = dialog.messages[dialog.messages.length - 1];
+        }
+        isGenerating.value = false;
+        isWaitingForResponse.value = false;
+        abortController = null;
+        triggerReactivity();
+      },
+      abortController.signal,
+    );
+  }
+
   function stopGeneration() {
+    if (abortController) {
+      abortController.abort();
+      abortController = null;
+    }
     isGenerating.value = false;
     isWaitingForResponse.value = false;
   }
@@ -289,13 +361,19 @@ export const useChatStore = defineStore('chat', () => {
     for (const dialog of dialogs.value) {
       const messageIndex = dialog.messages.findIndex(m => m.id === messageId);
       if (messageIndex !== -1 && dialog.messages[messageIndex].isUser) {
-        // Создаем новый объект сообщения с обновленным контентом
         dialog.messages[messageIndex] = {
           ...dialog.messages[messageIndex],
           content: newContent,
           edited: true,
-          timestamp: new Date(dialog.messages[messageIndex].timestamp), // Восстанавливаем Date
+          timestamp: new Date(dialog.messages[messageIndex].timestamp),
         };
+
+        // Удаляем все последующие сообщения и генерируем новый ответ
+        if (messageIndex < dialog.messages.length - 1) {
+          dialog.messages.splice(messageIndex + 1);
+          triggerReactivity();
+          generateAIResponse(dialog.id);
+        }
         break;
       }
     }
@@ -326,13 +404,10 @@ export const useChatStore = defineStore('chat', () => {
   function updateSettings(settings: { selectedModel: string; temperature: number }) {
     selectedModel.value = settings.selectedModel;
     temperature.value = settings.temperature;
-
     localStorage.setItem(`${STORAGE_KEY}-settings`, JSON.stringify(settings));
   }
 
-  // Вспомогательная функция для триггера реактивности
   function triggerReactivity() {
-    // Создаем новую ссылку на массив, чтобы Vue заметил изменения
     dialogs.value = [...dialogs.value];
   }
 
@@ -357,15 +432,3 @@ export const useChatStore = defineStore('chat', () => {
     selectedModel,
   };
 });
-
-function getMockAIResponse(): string {
-  const responses = [
-    'Конечно! Я проанализировал ваш запрос и готов предоставить развернутый ответ. Искусственный интеллект работает на основе сложных алгоритмов машинного обучения, которые позволяют обрабатывать и анализировать большие объемы данных.',
-    'Отличный вопрос! Давайте рассмотрим эту тему подробнее. Нейронные сети действительно показывают впечатляющие результаты в решении различных задач, от распознавания изображений до обработки естественного языка.',
-    'Спасибо за ваш запрос! Я обработал информацию и могу сказать следующее: современные технологии искусственного интеллекта продолжают развиваться быстрыми темпами, открывая новые возможности.',
-    'Понимаю ваш интерес к этой теме. Искусственный интеллект действительно становится неотъемлемой частью нашей повседневной жизни, трансформируя то, как мы работаем и общаемся.',
-    'Интересный вопрос! Если посмотреть на развитие технологий, то можно заметить, что мы находимся на пороге новой эры, где AI становится все более доступным и полезным инструментом.',
-    'Давайте разберемся в этом вопросе. Нейронные сети имитируют работу человеческого мозга, но делают это совершенно иначе, чем мы можем себе представить. Они обрабатывают информацию через слои искусственных нейронов.'
-  ];
-  return responses[Math.floor(Math.random() * responses.length)];
-}
