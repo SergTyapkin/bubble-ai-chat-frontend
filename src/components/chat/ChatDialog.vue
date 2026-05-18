@@ -23,20 +23,27 @@
     </div>
 
     <!-- Сообщения -->
-    <div v-else class="chat-dialog__messages" ref="messagesContainer">
-      <TransitionGroup name="message-list" tag="div" class="chat-dialog__messages-inner">
-        <ChatMessage
-          v-for="message in store.activeDialog?.messages"
-          :key="message.id"
-          :message="message"
-          @edit="handleEditMessage"
-        />
-      </TransitionGroup>
-      
-      <div v-if="store.isWaitingForResponse" class="chat-dialog__typing">
-        <span class="typing-dot"></span>
-        <span class="typing-dot"></span>
-        <span class="typing-dot"></span>
+    <div 
+      v-else 
+      ref="messagesContainer"
+      class="chat-dialog__messages"
+      :class="{ 'chat-dialog__messages--scrollable': isScrollable }"
+    >
+      <div class="chat-dialog__messages-inner">
+        <TransitionGroup name="message-list" tag="div">
+          <ChatMessage
+            v-for="message in store.activeDialog?.messages"
+            :key="message.id"
+            :message="message"
+            @edit="handleEditMessage"
+          />
+        </TransitionGroup>
+        
+        <div v-if="store.isWaitingForResponse" class="chat-dialog__typing">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+        </div>
       </div>
     </div>
 
@@ -91,6 +98,7 @@ export default defineComponent({
     const store = useChatStore();
     const messageText = ref('');
     const messagesContainer = ref<HTMLElement>();
+    const isScrollable = ref(false);
 
     // Определяем состояние кнопки
     const buttonState = computed<BubbleButtonState>(() => {
@@ -114,13 +122,11 @@ export default defineComponent({
 
     function handleSendOrStop() {
       if (store.isGenerating) {
-        // Останавливаем генерацию
         store.stopGeneration();
         return;
       }
       
       if (store.isWaitingForResponse) {
-        // Не даем отправить во время ожидания
         return;
       }
       
@@ -131,6 +137,7 @@ export default defineComponent({
       
       nextTick(() => {
         scrollToBottom();
+        checkIfScrollable();
       });
     }
 
@@ -151,11 +158,9 @@ export default defineComponent({
     }
 
     function handleGraphMessageClick(messageId: string) {
-      // Находим сообщение в DOM и скроллим к нему
       const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
       if (messageElement) {
         messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Подсветка
         messageElement.classList.add('chat-message--highlighted');
         setTimeout(() => {
           messageElement.classList.remove('chat-message--highlighted');
@@ -163,31 +168,40 @@ export default defineComponent({
       }
     }
 
-    // Прокрутка при монтировании компонента
+    function checkIfScrollable() {
+      nextTick(() => {
+        if (messagesContainer.value) {
+          const container = messagesContainer.value;
+          isScrollable.value = container.scrollHeight > container.clientHeight;
+        }
+      });
+    }
+
     onMounted(() => {
       nextTick(() => {
         scrollToBottom();
+        checkIfScrollable();
       });
     });
 
-    // Прокрутка при смене активного диалога
     watch(() => store.activeDialogId, () => {
+      isScrollable.value = false; // Сбрасываем при смене диалога
       nextTick(() => {
         scrollToBottom();
+        checkIfScrollable();
       });
     });
 
-    // Прокрутка при изменении сообщений (включая постепенную печать)
     watch(
       () => store.activeDialog?.messages.length,
       () => {
         nextTick(() => {
           scrollToBottom();
+          checkIfScrollable();
         });
       }
     );
 
-    // Прокрутка при обновлении контента сообщений (для анимации печати)
     watch(
       () => {
         const messages = store.activeDialog?.messages;
@@ -198,6 +212,7 @@ export default defineComponent({
       () => {
         nextTick(() => {
           scrollToBottom();
+          checkIfScrollable();
         });
       }
     );
@@ -207,6 +222,7 @@ export default defineComponent({
       messageText,
       messagesContainer,
       buttonState,
+      isScrollable,
       getPlaceholder,
       handleSendOrStop,
       handleEditMessage,
@@ -262,8 +278,8 @@ export default defineComponent({
     max-width 300px
     line-height 1.5
     
-  marginH = 12.5px
   &__messages
+    marginH = 12.5px
     flex 1
     width 100%
     max-width 800px
@@ -274,21 +290,12 @@ export default defineComponent({
     scrollable()
     display flex
     flex-direction column
-    
-    // Для малого количества сообщений - выравниваем снизу
-    &:not(.chat-dialog__messages--scrollable)
-      justify-content flex-end
       
   &__messages-inner
-    // Контейнер для TransitionGroup
-    display flex
-    flex-direction column
     width 100%
-    // Для сообщений снизу вверх
-    margin-top auto
     
-  marginH = 25px
   &__input
+    marginH = 25px
     width 'calc(100% - %s)' % (marginH)
     margin 25px marginH
     max-width 800px
@@ -380,6 +387,10 @@ export default defineComponent({
   
 .message-list-move
   transition transform 0.3s ease
+
+// Подсветка при клике из графа
+:global(.chat-message--highlighted)
+  animation highlight-message 2s ease-out
   
 @keyframes highlight-message
   0%
