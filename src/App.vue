@@ -68,7 +68,7 @@
 </style>
 
 <template>
-  <HeaderComponent class="header" />
+  <!-- <HeaderComponent class="header" /> -->
 
   <div class="wrapper">
     <router-view #default="{ Component }">
@@ -78,7 +78,7 @@
     </router-view>
   </div>
 
-  <FooterComponent class="footer" />
+  <!-- <FooterComponent class="footer" /> -->
 
   <Popups ref="popups" />
   <Modals ref="modals" />
@@ -129,7 +129,7 @@ export default {
   mounted() {
     this.global = getCurrentInstance()!.appContext.config.globalProperties;
 
-    this.global.$user = this.$store.state.user;
+    // this.global.$user = this.$store.state.user;
     this.global.$modals = this.$refs.modals;
     this.global.$popups = this.$refs.popups;
     this.global.$app = this;
