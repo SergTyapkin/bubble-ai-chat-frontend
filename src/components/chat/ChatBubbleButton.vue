@@ -27,10 +27,10 @@
     <svg v-else-if="state === 'stop'" width="24" height="24" viewBox="0 0 24 24" fill="none">
       <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" opacity="0.8"/>
       <circle cx="12" cy="6" r="2" fill="currentColor" opacity="0.4">
-        <animate attributeName="cy" values="6;4;6" dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="cy" values="5;2;5" dur="3s" repeatCount="indefinite"/>
       </circle>
-      <circle cx="6" cy="12" r="1.5" fill="currentColor" opacity="0.3">
-        <animate attributeName="cy" values="12;10;12" dur="2.3s" repeatCount="indefinite"/>
+      <circle cx="6" cy="20" r="1.5" fill="currentColor" opacity="0.3">
+        <animate attributeName="cy" values="22;18;22" dur="3.5s" repeatCount="indefinite"/>
       </circle>
     </svg>
 
@@ -91,6 +91,7 @@ export default defineComponent({
   position relative
   width 40px
   height 40px
+  border 1px solid rgba(colorEmp2, 0.15)
   
   &:hover:not(:disabled)
     background rgba(colorEmp2, 0.15)
@@ -100,7 +101,7 @@ export default defineComponent({
     transform scale(0.95)
     
   &:disabled
-    cursor not-allowed
+    cursor default
     opacity 0.5
     
   &--stop
@@ -111,9 +112,6 @@ export default defineComponent({
       
   &--loading
     color colorAlert
-    
-    &:hover:not(:disabled)
-      background rgba(colorAlert, 0.15)
       
   &--disabled
     color colorText4

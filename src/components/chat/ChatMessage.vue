@@ -100,21 +100,22 @@ export default defineComponent({
   display flex
   align-items flex-start
   gap 8px
-  margin-bottom 16px
+  padding-block 8px
+  border-radius radiusM
   
   &--user
     justify-content flex-end
     
     .chat-message__bubble
-      background rgba(colorEmp2, 0.15)
-      border 1px solid rgba(colorEmp2, 0.3)
+      background mix(colorBg, colorEmp2, 85%)
+      border 1px solid mix(colorBg, colorEmp2, 70%)
       
   &--bot
     justify-content flex-start
     
     .chat-message__bubble
-      background rgba(white, 0.05)
-      border 1px solid rgba(white, 0.08)
+      background mix(colorBg, white, 95%)
+      border 1px solid mix(colorBg, white, 92%)
       
   &__bubble
     max-width 70%
@@ -181,6 +182,13 @@ export default defineComponent({
 
     
   &--highlighted
+    animation highlight-message-block 3s cubic-bezier(0.33, 0.03, 0.14, 0.99)
+    @keyframes highlight-message-block
+      0%
+        background colorBlockBgEmp2
+      100%
+        background rgba(colorBlockBgEmp2, 0)
+
     .chat-message__bubble
       animation highlight-message 3s cubic-bezier(0.33, 0.03, 0.14, 0.99)
   

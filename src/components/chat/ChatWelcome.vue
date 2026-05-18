@@ -9,15 +9,15 @@
         <div class="bubble bubble--5"><div></div></div>
       </div>
       
-      <h1 class="chat-welcome__title">
+      <h1 class="chat-welcome__title" style="--animation-index: 0">
         Добро пожаловать в Bubble AI
       </h1>
       
-      <p class="chat-welcome__subtitle">
-        Ваш персональный AI-ассистент с пузырьковым характером
+      <p class="chat-welcome__subtitle" style="--animation-index: 1">
+        Ваш персональный AI-ассистент с пузырьковым дизайном
       </p>
       
-      <div class="chat-welcome__input">
+      <div class="chat-welcome__input" style="--animation-index: 3">
         <textarea
           v-model="messageText"
           class="chat-welcome__textarea"
@@ -26,7 +26,7 @@
           @keydown.enter.prevent="handleSend"
         ></textarea>
         
-        <ChatBubbleButton @click="handleSend" />
+        <ChatBubbleButton @click="handleSend" class="chat-welcome__bubble-button"  style="--animation-index: 5" />
       </div>
     </div>
   </div>
@@ -82,10 +82,11 @@ export default defineComponent({
     position absolute
     top 50%
     left 50%
-    transform translate(-50%, -50%)
+    transform translate(-50%, -50%) scale(2)
     width 300px
     height 300px
     z-index -1
+    animation-opacity()
     
   .bubble
     position absolute
@@ -109,8 +110,8 @@ export default defineComponent({
         transform translateX(20px)
     
     &--1
-      width 80px
-      height 80px
+      width 60px
+      height 60px
       top 20%
       left 10%
       animation-delay 0s
@@ -118,8 +119,8 @@ export default defineComponent({
         animation-delay 1s
       
     &--2
-      width 60px
-      height 60px
+      width 50px
+      height 50px
       top 10%
       right 20%
       animation-delay 0.5s
@@ -127,8 +128,8 @@ export default defineComponent({
         animation-delay 2s
       
     &--3
-      width 100px
-      height 100px
+      width 60px
+      height 60px
       bottom 10%
       right 10%
       animation-delay 1s
@@ -158,12 +159,14 @@ export default defineComponent({
     font-bold()
     color colorText1
     margin-bottom 16px
+    animation-float()
     
   &__subtitle
     font-medium()
     color colorText3
     margin-bottom 40px
     max-width 500px
+    animation-float()
     
   &__input
     display flex
@@ -175,7 +178,8 @@ export default defineComponent({
     border-radius radiusL
     background rgba(white, 0.03)
     border 1px solid rgba(white, 0.08)
-    backdrop-filter blur(10px)  
+    backdrop-filter blur(10px)
+    animation-float(0.5s, 0, 20px, bottom)
     
   &__textarea
     flex 1
@@ -187,4 +191,7 @@ export default defineComponent({
     
     &::placeholder
       color colorText4
+
+  &__bubble-button
+    animation-float(0.5s, 0, 20px, bottom)
 </style>

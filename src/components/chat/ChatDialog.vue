@@ -5,14 +5,19 @@
       <div class="chat-dialog__empty-content">
         <div class="chat-dialog__empty-icon">
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="1.5" opacity="0.2"/>
-            <circle cx="18" cy="18" r="4" fill="currentColor" opacity="0.15">
-              <animate attributeName="cy" values="18;14;18" dur="2s" repeatCount="indefinite"/>
+            <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+            <circle cx="20" cy="24" r="15" fill="currentColor" opacity="0.05">
+              <animate attributeName="cy" values="26;22;26" dur="4s" repeatCount="indefinite"/>
             </circle>
-            <circle cx="30" cy="26" r="3" fill="currentColor" opacity="0.2">
-              <animate attributeName="cy" values="26;22;26" dur="2.3s" repeatCount="indefinite"/>
+            <circle cx="18" cy="18" r="5" fill="currentColor" opacity="0.7">
+              <animate attributeName="cy" values="18;14;18" dur="2.8s" repeatCount="indefinite"/>
             </circle>
-            <path d="M20 34L28 28L20 22V34Z" fill="currentColor" opacity="0.3"/>
+            <circle cx="30" cy="26" r="3" fill="currentColor" opacity="1">
+              <animate attributeName="cy" values="26;22;26" dur="3s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="22" cy="32" r="3" fill="currentColor" opacity="0.5">
+              <animate attributeName="cy" values="32;36;32" dur="3.5s" repeatCount="indefinite"/>
+            </circle>
           </svg>
         </div>
         <h3 class="chat-dialog__empty-title">Начните общение</h3>
@@ -66,7 +71,7 @@
       />
 
       <div class="chat-dialog__disclaimer">
-        Not a really AI. Just test project
+        AI generated. Only for reference
       </div>
     </div>
 
@@ -263,8 +268,8 @@ export default defineComponent({
     
   &__empty-icon
     color colorEmp2
-    opacity 0.3
-    margin-bottom 20px
+    margin-bottom 0px
+    opacity 0.5
     
   &__empty-title
     font-large()
@@ -387,16 +392,4 @@ export default defineComponent({
   
 .message-list-move
   transition transform 0.3s ease
-
-// Подсветка при клике из графа
-:global(.chat-message--highlighted)
-  animation highlight-message 2s ease-out
-  
-@keyframes highlight-message
-  0%
-    box-shadow 0 0 20px rgba(colorEmp2, 0.5)
-    transform scale(1.02)
-  100%
-    box-shadow 0 0 0 rgba(colorEmp2, 0)
-    transform scale(1)
 </style>

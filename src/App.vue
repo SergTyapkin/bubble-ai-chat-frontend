@@ -68,8 +68,6 @@
 </style>
 
 <template>
-  <!-- <HeaderComponent class="header" /> -->
-
   <div class="wrapper">
     <router-view #default="{ Component }">
       <transition name="scale-in">
@@ -77,8 +75,6 @@
       </transition>
     </router-view>
   </div>
-
-  <!-- <FooterComponent class="footer" /> -->
 
   <Popups ref="popups" />
   <Modals ref="modals" />
@@ -89,8 +85,6 @@ import { getCurrentInstance } from 'vue';
 import { Modals, Popups } from '@sergtyapkin/modals-popups';
 import API from '~/utils/API';
 import { getRequestFoo, saveAllAssetsByServiceWorker, setDisableCachingUrlsByServiceWorker } from '~/utils/utils';
-import HeaderComponent from '~/components/HeaderComponent.vue';
-import FooterComponent from '~/components/FooterComponent.vue';
 import { DISABLED_CACHING_URLS } from '~/constants';
 
 function removeAllHoverStyles() {
@@ -114,7 +108,7 @@ function removeAllHoverStyles() {
 }
 
 export default {
-  components: { HeaderComponent, FooterComponent, Modals, Popups },
+  components: { Modals, Popups },
 
   data(): {
     transitionName: string;

@@ -23,19 +23,36 @@ const STORAGE_KEY = 'bubble-ai-chat';
 
 // Утилиты для сериализации/десериализации
 function serializeDialogs(dialogs: Dialog[]): string {
-  return JSON.stringify(dialogs, (key, value) => {
-    if (value instanceof Date) {
-      return { __type: 'Date', value: value.toISOString() };
+  function prepareForSerialization(obj: any): any {
+    if (obj instanceof Date) {
+      return { __type: 'Date', value: obj.toISOString() };
     }
-    return value;
-  });
+
+    if (Array.isArray(obj)) {
+      return obj.map(prepareForSerialization);
+    }
+
+    if (obj && typeof obj === 'object') {
+      const result: any = {};
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          result[key] = prepareForSerialization(obj[key]);
+        }
+      }
+      return result;
+    }
+
+    return obj;
+  }
+
+  return JSON.stringify(prepareForSerialization(dialogs));
 }
 
 function deserializeDialogs(json: string): Dialog[] {
   if (!json) return [];
 
   try {
-    return JSON.parse(json, (key, value) => {
+    return JSON.parse(json, (_key, value) => {
       if (value && value.__type === 'Date') {
         return new Date(value.value);
       }
@@ -72,6 +89,20 @@ export const useChatStore = defineStore('chat', () => {
   const isGenerating = ref(false);
   const isWaitingForResponse = ref(false);
   const showFullscreenGraph = ref(false);
+  const selectedModel = ref<string>('deepseek/deepseek-r1');
+  const temperature = ref<number>(0.7);
+
+  // Загрузить настройки из localStorage
+  const savedSettings = localStorage.getItem(`${STORAGE_KEY}-settings`);
+  if (savedSettings) {
+    try {
+      const settings = JSON.parse(savedSettings);
+      selectedModel.value = settings.selectedModel || selectedModel.value;
+      temperature.value = settings.temperature ?? temperature.value;
+    } catch (e) {
+      console.error('Failed to parse settings:', e);
+    }
+  }
 
   // Следим за изменениями и сохраняем
   watch(
@@ -112,11 +143,7 @@ export const useChatStore = defineStore('chat', () => {
 
     sortedDialogs.forEach(dialog => {
       const date = new Date(dialog.createdAt);
-      const dateKey = date.toLocaleDateString('ru-RU', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      });
+      const dateKey = date.toDateString();
 
       if (!groups[dateKey]) {
         groups[dateKey] = [];
@@ -137,6 +164,14 @@ export const useChatStore = defineStore('chat', () => {
     dialogs.value.unshift(dialog);
     activeDialogId.value = dialog.id;
     return dialog;
+  }
+
+  function renameDialog(dialogId: string, newTitle: string) {
+    const dialog = dialogs.value.find(d => d.id === dialogId);
+    if (dialog) {
+      dialog.title = newTitle;
+      triggerReactivity();
+    }
   }
 
   function sendMessage(content: string, dialogId: string) {
@@ -207,7 +242,8 @@ export const useChatStore = defineStore('chat', () => {
       if (messageIndex !== -1) {
         dialog.messages[messageIndex] = {
           ...dialog.messages[messageIndex],
-          content: responseText.slice(0, i + 1)
+          content: responseText.slice(0, i + 1),
+          timestamp: new Date(dialog.messages[messageIndex].timestamp), // Восстанавливаем Date
         };
       }
 
@@ -233,7 +269,8 @@ export const useChatStore = defineStore('chat', () => {
         dialog.messages[messageIndex] = {
           ...dialog.messages[messageIndex],
           content: newContent,
-          edited: true
+          edited: true,
+          timestamp: new Date(dialog.messages[messageIndex].timestamp), // Восстанавливаем Date
         };
         break;
       }
@@ -262,6 +299,13 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  function updateSettings(settings: { selectedModel: string; temperature: number }) {
+    selectedModel.value = settings.selectedModel;
+    temperature.value = settings.temperature;
+
+    localStorage.setItem(`${STORAGE_KEY}-settings`, JSON.stringify(settings));
+  }
+
   // Вспомогательная функция для триггера реактивности
   function triggerReactivity() {
     // Создаем новую ссылку на массив, чтобы Vue заметил изменения
@@ -282,6 +326,10 @@ export const useChatStore = defineStore('chat', () => {
     deleteDialog,
     clearAllDialogs,
     stopGeneration,
+    renameDialog,
+    updateSettings,
+    temperature,
+    selectedModel,
   };
 });
 
