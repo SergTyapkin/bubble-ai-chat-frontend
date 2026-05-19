@@ -148,7 +148,7 @@ export default {
     checkMobileScreen() {
       if (window.innerWidth <= 700) {
         this.global!.$isMobile = true;
-        removeAllHoverStyles();
+        // removeAllHoverStyles();
         return;
       }
       this.global!.$isMobile = false;
