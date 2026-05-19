@@ -1,8 +1,16 @@
+# Интерфейс Bubble AI для запросов к нейросетям
+Имеет множество бесплатных нейросетей на ваш выбор, а так же возможность ответвляться в диалогах от любого сообщения
+
 ![GithubCI](https://github.com/sergtyapkin/vue-frontend-template/actions/workflows/deploy.yaml/badge.svg)
+| <img width="1861" height="924" alt="image" src="https://github.com/user-attachments/assets/ce40f71c-0458-4cc6-abfb-8298b6d9cc3c" /> | <img width="1859" height="926" alt="image" src="https://github.com/user-attachments/assets/511000ba-3f95-4566-985d-6bb11c33b1a3" /> |
+| -------- | --------- |
+| <img width="1860" height="928" alt="image" src="https://github.com/user-attachments/assets/9200b175-aa73-4c6e-ab6b-27d1d8ad97f2" /> | <img width="1860" height="931" alt="image" src="https://github.com/user-attachments/assets/a709bfa5-f22c-458f-8003-adc1ffb0b3a2" /> |
+| <img width="930" height="935" alt="image" src="https://github.com/user-attachments/assets/9222cf25-b86b-444e-a34f-ff4dc688df36" /> | <img width="721" height="907" alt="image" src="https://github.com/user-attachments/assets/33d95f54-8327-4d1f-93f4-595004ec237d" /> |
 
-# Фронтенд на Vue.js с авто-деплоем на _Nginx_ в докере и автоматическим получением сертификатов _Letsencrypt_
 
-Словом, всё необходимое, чтобы раскатить фронтенд за 10 минут на чистой машине с Ubuntu.
+-------------
+
+Про код: на борту всё необходимое, чтобы раскатить фронтенд за 10 минут на чистой машине с Ubuntu.
 
 ### Все сконфигурированные пакеты и инструменты сборки:
 
