@@ -2,12 +2,12 @@ import { defineConfig, loadEnv } from 'vite';
 import pluginVue from '@vitejs/plugin-vue';
 import pluginBasicSsl from '@vitejs/plugin-basic-ssl';
 import path from 'path';
-import { VitePWA as pluginVitePWA } from 'vite-plugin-pwa';
+// import { VitePWA as pluginVitePWA } from 'vite-plugin-pwa';
 import { viteStaticCopy as pluginViteStaticCopy } from 'vite-plugin-static-copy';
 import pluginSitemap from 'vite-plugin-sitemap';
 import pluginAutoprefixer from 'autoprefixer';
 import routes from './src/routes';
-import pluginTsCompileServiceWorker from './src/serviceWorker/pluginTsCompileServiceWorker';
+// import pluginTsCompileServiceWorker from './src/serviceWorker/pluginTsCompileServiceWorker';
 import pluginAssetsInserter from './src/serviceWorker/pluginAssetsListGenerator';
 import pluginDynamicImport from 'vite-plugin-dynamic-import';
 import pluginOpenGraph from 'vite-plugin-open-graph';
@@ -36,53 +36,53 @@ export default defineConfig(({ mode }: { command: 'build' | 'serve'; mode: 'deve
         dynamicRoutes: Object.keys(routes).filter(route => routes[route]),
         generateRobotsTxt: true,
       }),
-      pluginTsCompileServiceWorker(),
-      pluginVitePWA({
-        strategies: 'injectManifest',
-        injectRegister: false,
-        injectManifest: {
-          injectionPoint: undefined,
-        },
-        srcDir: 'dist',
-        filename: 'sw.js',
+      // pluginTsCompileServiceWorker(),
+      // pluginVitePWA({
+      //   strategies: 'injectManifest',
+      //   injectRegister: false,
+      //   injectManifest: {
+      //     injectionPoint: undefined,
+      //   },
+      //   srcDir: 'dist',
+      //   filename: 'sw.js',
 
 
-        includeManifestIcons: true,
-        includeAssets: ['/static/favicon.svg'],
-        manifest: {
-          short_name: 'Frontend Template',
-          name: 'Frontend template with all best-practice instruments',
-          description: 'Some description of our service',
-          icons: [
-            {
-              src: '/static/favicon.svg',
-              sizes: '32x32',
-              type: 'image/png',
-              purpose: 'maskable',
-            },
-          ],
-          theme_color: '#181818',
-          background_color: '#181818',
-          display: 'standalone',
-          id: '/?source=pwa',
-          start_url: '/?source=pwa',
-          scope: '/',
-          prefer_related_applications: false,
-          shortcuts: [
-            {
-              name: 'Home',
-              short_name: 'Home',
-              description: 'Our base page',
-              url: '/?source=pwa',
-            },
-          ],
-        },
-      }),
+      //   includeManifestIcons: true,
+      //   includeAssets: ['/static/favicon.svg'],
+      //   manifest: {
+      //     short_name: 'Frontend Template',
+      //     name: 'Frontend template with all best-practice instruments',
+      //     description: 'Some description of our service',
+      //     icons: [
+      //       {
+      //         src: '/static/favicon.svg',
+      //         sizes: '32x32',
+      //         type: 'image/png',
+      //         purpose: 'maskable',
+      //       },
+      //     ],
+      //     theme_color: '#181818',
+      //     background_color: '#181818',
+      //     display: 'standalone',
+      //     id: '/?source=pwa',
+      //     start_url: '/?source=pwa',
+      //     scope: '/',
+      //     prefer_related_applications: false,
+      //     shortcuts: [
+      //       {
+      //         name: 'Home',
+      //         short_name: 'Home',
+      //         description: 'Our base page',
+      //         url: '/?source=pwa',
+      //       },
+      //     ],
+      //   },
+      // }),
       pluginOpenGraph({
         basic: {
-          title: 'Frontend title',
-          siteName: 'ShortSiteName',
-          description: 'Long site description',
+          title: 'Bubble AI',
+          siteName: 'Bubble AI',
+          description: 'AI интерфейс с ветвлением в диалогах для общения с совершенно разными нейросетями',
           type: 'image/png',
           url: `${env.VITE_HTTPS === 'true' ? 'https' : 'http'}://${env.VITE_DEPLOY_HOSTNAME}`,
           image: `${env.VITE_HTTPS === 'true' ? 'https' : 'http'}://${env.VITE_DEPLOY_HOSTNAME}/static/open-graph-preview.png`,

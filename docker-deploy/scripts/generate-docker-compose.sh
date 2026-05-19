@@ -36,5 +36,5 @@ then
 else
   echo "✅ Docker-compose sets up without HTTPS configuration (VITE_HTTPS=false in .env)"
   # Remove ports "433:433" in docker-compose.yaml
-  sed -i -e '45d' ./docker-deploy/docker-compose.yaml
+  sed -i -e '46d' ./docker-deploy/docker-compose.yaml
 fi
