@@ -28,6 +28,10 @@
         
         <ChatBubbleButton @click="handleSend" class="chat-welcome__bubble-button"  style="--animation-index: 5" />
       </div>
+
+      <p class="chat-welcome__hint" style="--animation-index: 6">
+        Фишка проекта - древовидная система диалогов с возможностью ответвиться от любого сообщения
+      </p>
     </div>
   </div>
 </template>
@@ -77,6 +81,7 @@ export default defineComponent({
     text-align center
     position relative
     z-index 1
+    margin-top 60px
     
   &__bubbles
     position absolute
@@ -164,9 +169,16 @@ export default defineComponent({
   &__subtitle
     font-medium()
     color colorText3
-    margin-bottom 40px
+    margin-bottom 30px
     max-width 500px
     animation-float()
+    
+  &__hint
+    font-small()
+    color colorText5
+    margin-bottom 20px
+    max-width 500px
+    animation-float(0.5s, 0, 20px, bottom)
     
   &__input
     display flex
@@ -174,6 +186,7 @@ export default defineComponent({
     gap 12px
     max-width 600px
     margin 0 auto
+    margin-bottom 20px
     padding 16px
     border-radius radiusL
     background rgba(white, 0.03)

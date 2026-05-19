@@ -17,17 +17,10 @@
       </div>
 
       <!-- Поиск -->
-      <ChatSearch v-model="searchQuery" />
+      <ChatSearch v-if="store.dialogs.length" v-model="searchQuery" />
 
       <!-- Пустое состояние -->
       <div v-if="!store.dialogs.length" class="chat-sidebar__empty">
-        <div class="chat-sidebar__empty-icon">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="1.5" opacity="0.3" />
-            <path d="M24 16V32M16 24H32" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
-              opacity="0.3" />
-          </svg>
-        </div>
         <p class="chat-sidebar__empty-text">Нет активных диалогов</p>
         <p class="chat-sidebar__empty-hint">Создайте новый диалог, чтобы начать общение</p>
       </div>
@@ -145,19 +138,22 @@ export default defineComponent({
 @import '../../styles/constants.styl'
 @import '../../styles/fonts.styl'
 @import '../../styles/utils.styl'
+@import '../../styles/components.styl'
+@import '../../styles/animations.styl'
 
 .chat-sidebar
   display flex
   flex-direction column
   height 100%
   background darken(colorBg, 3%)
+  animation-float(0.5s, -20px, 0, left)
   
   &__header
     display flex
     align-items center
     justify-content space-between
     padding 20px
-    border-bottom 1px solid rgba(255, 255, 255, 0.08)
+    border-not-full()
     
   &__logo-container
     display flex

@@ -1,15 +1,21 @@
+// --------- Style imports
+import '~/styles/fontsLoader.styl';
+import '~/styles/global.styl';
+import 'highlight.js/styles/atom-one-dark.css';
+
+// --------- Code imports
 import { createApp } from 'vue';
 
 import App from '~/App.vue';
 import { createPinia } from 'pinia';
 import createVueRouter from '~/Router';
 
-import '~/styles/fontsLoader.styl';
-import '~/styles/global.styl';
 import swAPI from '~/serviceWorker/swAPI';
 
+// --------- Init WS
 await swAPI.register();
 
+// -------- Create App
 const pinia = createPinia();
-const Router = createVueRouter(pinia);
-/*const _app = */createApp(App).use(pinia).use(Router).mount('#app');
+const router = createVueRouter();
+createApp(App).use(pinia).use(router).mount('#app');

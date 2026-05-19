@@ -23,12 +23,12 @@
           <img src="/static/icons/settings.svg" alt="settings"/>
         </button>
       </div>
-    </section>
-    
-    <div class="chat-sidebar-footer__disclaimer">
+    </section>    
+  </section>
+
+  <div class="chat-sidebar-footer__disclaimer">
       Powered by <a href="https://openrouter.ai">OpenRouter</a>
     </div>
-  </section>
 </template>
 
 <script lang="ts">
@@ -42,7 +42,13 @@ export default defineComponent({
     const store = useChatStore();
     
     const totalMessages = computed(() => {
-      return store.dialogs.reduce((sum, dialog) => sum + dialog.messages.length, 0);
+      return store.dialogs.reduce((sum, dialog) => 
+        sum + dialog.branches.reduce((sum, branch) =>
+          sum + branch.messages.length,
+          0,
+        ),
+        0,
+      );
     });
     
     const totalDialogs = computed(() => store.dialogs.length);
@@ -61,8 +67,9 @@ export default defineComponent({
 @import '../../styles/components.styl'
 
 .chat-sidebar-footer
-  border-not-full()
+  border-not-full(180deg)
   padding 16px 20px
+  padding-bottom 0
   
   &__top-block
     display flex
@@ -112,6 +119,7 @@ export default defineComponent({
     color colorText5
     padding-top 8px
     border-top 1px solid rgba(white, 0.05)
+    margin-bottom 8px
     a
       color colorEmp2
       hover-effect-underline(colorEmp2)

@@ -1,7 +1,7 @@
 <template>
   <div class="chat-dialog">
     <!-- Заглушка для пустого диалога -->
-    <div v-if="!store.activeDialog?.messages.length" class="chat-dialog__empty">
+    <div v-if="!store.activeMessages.length" class="chat-dialog__empty">
       <div class="chat-dialog__empty-content">
         <div class="chat-dialog__empty-icon">
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
@@ -37,10 +37,11 @@
       <div class="chat-dialog__messages-inner">
         <TransitionGroup name="message-list" tag="div">
           <ChatMessage
-            v-for="message in store.activeDialog?.messages"
+            v-for="message in store.activeMessages"
             :key="message.id"
             :message="message"
             @edit="handleEditMessage"
+            @regenerate="handleRegenerateMessage"
           />
         </TransitionGroup>
         
@@ -76,12 +77,20 @@
     </div>
 
     <ChatHistoryGraph 
-      v-if="store.activeDialog?.messages.length"
-      :messages="store.activeDialog.messages"
+      v-if="store.allMessagesForGraph.length"
+      :messages="store.allMessagesForGraph"
+      :branches="store.allBranchesForGraph"
+      :active-branch-id="store.activeDialog?.activeBranchId"
       :is-generating="store.isGenerating"
       @message-click="handleGraphMessageClick"
+      @create-branch="handleCreateBranch"
+      @switch-branch="handleSwitchBranch"
     />
   </div>
+
+  <!-- <button class="chat-dialog__button-open-graph" @click="">
+    <img src="/static/icons/plus-empty.svg" alt="full graph"/>
+  </button> -->
 </template>
 
 <script lang="ts">
@@ -122,7 +131,7 @@ export default defineComponent({
     function getPlaceholder(): string {
       if (store.isGenerating) return 'Bubble AI генерирует ответ...';
       if (store.isWaitingForResponse) return 'Ожидание ответа...';
-      return 'Введите сообщение...';
+      return 'Что интересует вас сегодня?';
     }
 
     function handleSendOrStop() {
@@ -146,8 +155,20 @@ export default defineComponent({
       });
     }
 
+    function handleRegenerateMessage(messageId: string) {
+      store.regenerateMessage(messageId);
+    }
+
     function handleEditMessage(messageId: string, newContent: string) {
       store.editMessage(messageId, newContent);
+    }
+
+    function handleCreateBranch(messageId: string) {
+      store.createBranch(messageId);
+    }
+
+    function handleSwitchBranch(branchId: string) {
+      store.switchBranch(branchId);
     }
 
     function autoResize(event: Event) {
@@ -198,7 +219,7 @@ export default defineComponent({
     });
 
     watch(
-      () => store.activeDialog?.messages.length,
+      () => store.activeMessages.length,
       () => {
         nextTick(() => {
           scrollToBottom();
@@ -209,7 +230,7 @@ export default defineComponent({
 
     watch(
       () => {
-        const messages = store.activeDialog?.messages;
+        const messages = store.activeMessages;
         if (!messages || messages.length === 0) return '';
         const lastMessage = messages[messages.length - 1];
         return lastMessage.content;
@@ -231,6 +252,9 @@ export default defineComponent({
       getPlaceholder,
       handleSendOrStop,
       handleEditMessage,
+      handleRegenerateMessage,
+      handleCreateBranch,
+      handleSwitchBranch,
       autoResize,
       handleGraphMessageClick,
     };
@@ -248,114 +272,118 @@ export default defineComponent({
 @import '../../styles/scrollbars.styl'
 
 .chat-dialog
+  position relative
   display flex
   flex-direction column
   align-items center
   height 100%
-  position relative
-  
+
   &__empty
-    flex 1
     display flex
+    flex 1
     align-items center
     justify-content center
     width 100%
     padding 40px 20px
-    
+
   &__empty-content
     text-align center
     animation-float(0.6s, 0, -20px)
-    
+
   &__empty-icon
-    color colorEmp2
     margin-bottom 0px
+    color colorEmp2
     opacity 0.5
-    
+
   &__empty-title
     font-large()
     font-bold()
-    color colorText1
+
     margin-bottom 8px
-    
+    color colorText1
+
   &__empty-text
     font-small()
-    color colorText3
+
     max-width 300px
     line-height 1.5
-    
+    color colorText3
+
+  marginH = 12.5px
   &__messages
-    marginH = 12.5px
+    overflow-y auto
+    display flex
     flex 1
+    flex-direction column
     width 100%
     max-width 800px
-    overflow-y auto
     margin 0
     padding 20px marginH
     padding-right chatHistoryWidth
     scrollable()
-    display flex
-    flex-direction column
-      
+
   &__messages-inner
     width 100%
-    
+
+  marginH = 25px
   &__input
-    marginH = 25px
-    width 'calc(100% - %s)' % (marginH)
-    margin 25px marginH
-    max-width 800px
-    background darken(colorBg, 2%)
-    border-radius radiusM
-    background rgba(white, 0.05)
     position relative
+    width 'calc(100% - %s)' % (marginH)
+    max-width 800px
+    margin 25px marginH
+    border-radius radiusM
+    background colorBlockBg
     animation-float(0.5s, 0, 30px, bottom)
-    
+
   &__textarea
-    width 100%
     input-no-styles()
-    font-small()
-    color colorText1
-    padding 10px 16px
+  &__textarea
     resize none
-    max-height 350px
+    display block
+    width 100%
     min-height 100px
+    max-height 350px
+    padding 10px 16px
     padding 16px 20px
     padding-right 50px
     border-radius inherit
-    display block
+    color colorText1
+    font-small()
     trans()
-    
+
     &::placeholder
       color colorText4
-      
+
     &:focus
       background rgba(white, 0.08)
-      
+
     &--disabled
-      opacity 0.6
       cursor not-allowed
-      
+      opacity 0.6
+
   &__typing
     display flex
     gap 4px
-    padding 12px 16px
     margin 8px 0
-    
+    padding 12px 16px
+
   .typing-dot
     width 8px
     height 8px
     border-radius 50%
     background colorEmp2
     animation typing 1.4s infinite
-    
+
     &:nth-child(2)
       animation-delay 0.2s
-      
+
     &:nth-child(3)
       animation-delay 0.4s
 
     @keyframes typing
-      0%, 60%, 100%
+      0%
+      60%
+      100%
         transform translateY(0)
         opacity 0.4
       30%
@@ -366,30 +394,46 @@ export default defineComponent({
     position absolute
     right 10px
     bottom 10px
-    
+
   &__disclaimer
     position absolute
     bottom -20px
-    color colorText5
-    font-small-extra()
     left 50%
     transform translateX(-50%)
+    color colorText5
+    font-small-extra()
+
+  buttonOpenGraphSize = 50px
+  &__button-open-graph
+    button-no-styles()
+  &__button-open-graph
+    position absolute
+    top 0
+    right 0
+    width buttonOpenGraphSize
+    height buttonOpenGraphSize
+    border-bottom-left-radius radiusMax
+    padding 5px 5px 12px 12px
+    border 1px solid colorBorder
+    background colorBlockBg
+    border-top none
+    border-right none
 
 // Анимации для TransitionGroup
 .message-list-enter-active
   transition all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)
-  
+
 .message-list-leave-active
   transition all 0.3s ease-in
-  
+
 .message-list-enter-from
-  opacity 0
   transform translateY(20px) scale(0.95)
-  
-.message-list-leave-to
   opacity 0
+
+.message-list-leave-to
   transform translateX(-30px)
-  
+  opacity 0
+
 .message-list-move
   transition transform 0.3s ease
 </style>

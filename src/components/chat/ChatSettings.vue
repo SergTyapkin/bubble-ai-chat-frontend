@@ -13,8 +13,8 @@
     <div class="chat-settings__content">
       <!-- Выбор модели -->
       <div class="chat-settings__section">
-        <label class="chat-settings__label">Модель нейросети</label>
-        <div class="chat-settings__select-wrapper">
+        <label class="chat-settings__label" style="--animation-index: 1">Модель нейросети</label>
+        <div class="chat-settings__select-wrapper" style="--animation-index: 2">
           <select 
             v-model="selectedModel" 
             class="chat-settings__select"
@@ -35,11 +35,11 @@
 
       <!-- Temperature -->
       <div class="chat-settings__section">
-        <label class="chat-settings__label">
+        <label class="chat-settings__label" style="--animation-index: 3">
           Temperature: {{ temperature.toFixed(1) }}
         </label>
         
-        <div class="chat-settings__range-wrapper">
+        <div class="chat-settings__range-wrapper" style="--animation-index: 4">
           <input
             v-model.number="temperature"
             type="range"
@@ -165,6 +165,7 @@ export default defineComponent({
 @import '../../styles/utils.styl'
 @import '../../styles/buttons.styl'
 @import '../../styles/components.styl'
+@import '../../styles/animations.styl'
 
 .chat-settings
   display flex
@@ -179,6 +180,7 @@ export default defineComponent({
     padding 20px
     border-not-full()
     svg-inside()
+    animation-float(0.5s, -20px, 0, left)
     
   &__title
     font-large()
@@ -212,9 +214,11 @@ export default defineComponent({
     font-semibold()
     color colorText2
     margin-bottom 12px
+    animation-float(0.5s, -20px, 0, left)
     
   &__select-wrapper
     position relative
+    animation-float(0.5s, -20px, 0, left)
     
   &__select
     width 100%
@@ -247,6 +251,7 @@ export default defineComponent({
     
   &__range-wrapper
     margin-top 8px
+    animation-float(0.5s, -20px, 0, left)
     
   &__range
     width 100%

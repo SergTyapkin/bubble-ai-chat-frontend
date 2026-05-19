@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory, Router, RouteLocationNormalized, NavigationGuardNext } from 'vue-router';
-import { type Store } from '~/types/store';
 
 // Components:
 import PageChat from '~/views/PageChat.vue';
@@ -15,7 +14,7 @@ type MyRoute = RouteRecordRaw & {
   }
 }
 
-export default function createVueRouter(_Store: Store): Router {
+export default function createVueRouter(): Router {
   const routesList: MyRoute[] = [
     { path: '/', name: 'default', redirect: { name: 'chat' } },
     { path: '/chat', name: 'chat', component: PageChat },

@@ -43,10 +43,10 @@
       
       <div class="chat-dialog-card__meta">
         <span class="chat-dialog-card__date">
-          {{ formatDate(dialog.lastMessage?.timestamp || dialog.createdAt) }}
+          {{ formatDate(getLastActivity(dialog)) }}
         </span>
         <span class="chat-dialog-card__count">
-          {{ dialog.messages.length }} сообщ.
+          {{ getTotalMessages(dialog) }} сообщ.
         </span>
       </div>
     </div>
@@ -96,6 +96,24 @@ export default defineComponent({
     const editTitle = ref('');
     const titleInput = ref<HTMLInputElement>();
 
+    function getTotalMessages(dialog: Dialog): number {
+      return dialog.branches.reduce((sum, branch) => sum + branch.messages.length, 0);
+    }
+
+    function getLastActivity(dialog: Dialog): Date {
+      let lastTimestamp = dialog.createdAt;
+      
+      for (const branch of dialog.branches) {
+        for (const msg of branch.messages) {
+          if (new Date(msg.timestamp).getTime() > new Date(lastTimestamp).getTime()) {
+            lastTimestamp = msg.timestamp;
+          }
+        }
+      }
+      
+      return lastTimestamp;
+    }
+
     function formatDate(date: Date): string {
       return dateTimeFormatter(date, 'short', 'short');
     }
@@ -129,6 +147,8 @@ export default defineComponent({
       startEdit,
       saveTitle,
       cancelEdit,
+      getTotalMessages,
+      getLastActivity,
     };
   },
 });
