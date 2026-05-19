@@ -14,6 +14,13 @@
             <path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
           </svg>
         </button>
+
+        <!-- Кнопка закрытия для мобильной версии -->
+        <button class="chat-sidebar__close-btn" @click="$emit('close')">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
       </div>
 
       <!-- Поиск -->
@@ -54,6 +61,7 @@ import ChatSidebarFooter from './ChatSidebarFooter.vue';
 import ChatSettings from './ChatSettings.vue';
 
 export default defineComponent({
+  emits: ['close'],
   components: {
     ChatSearch,
     ChatDialogCard,
@@ -154,6 +162,24 @@ export default defineComponent({
     justify-content space-between
     padding 20px
     border-not-full()
+
+  &__close-btn
+    button-no-styles()
+    svg-inside()
+  &__close-btn
+    color colorText3
+    padding 8px
+    border-radius radiusMax
+    display none
+    trans()
+    
+    &:hover
+      color colorText1
+      background rgba(white, 0.05)
+      
+  @media ({mobile})
+    &__close-btn
+      display flex
     
   &__logo-container
     display flex

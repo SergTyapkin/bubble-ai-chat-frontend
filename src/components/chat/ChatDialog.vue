@@ -42,6 +42,7 @@
             :message="message"
             @edit="handleEditMessage"
             @regenerate="handleRegenerateMessage"
+            @create-branch="handleCreateBranch"
           />
         </TransitionGroup>
         
@@ -85,6 +86,7 @@
       @message-click="handleGraphMessageClick"
       @create-branch="handleCreateBranch"
       @switch-branch="handleSwitchBranch"
+      :is-mobile="$isMobile"
     />
   </div>
 
@@ -320,6 +322,8 @@ export default defineComponent({
     margin 0
     padding 20px marginH
     padding-right chatHistoryWidth
+    @media ({mobile})
+      padding-right chatHistoryWidthMobile
     scrollable()
 
   &__messages-inner
@@ -401,6 +405,7 @@ export default defineComponent({
     left 50%
     transform translateX(-50%)
     color colorText5
+    white-space nowrap
     font-small-extra()
 
   buttonOpenGraphSize = 50px

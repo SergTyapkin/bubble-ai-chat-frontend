@@ -68,6 +68,17 @@
               <path d="M2 10V3C2 2.44772 2.44772 2 3 2H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
           </button>
+
+          <button 
+            class="chat-message__action-btn"
+            @click="$emit('createBranch', message.id);"
+            title="Создать ответвление"
+          >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 3V10C3 10.5523 3.44772 11 4 11H10.5M10.5 11L8 8.5M10.5 11L8 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M13 5V3H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          </button>
         </template>
         
         <!-- Кнопки для сообщений пользователя -->
@@ -99,7 +110,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, watch, nextTick, type PropType } from 'vue';
+import { defineComponent, ref, computed, type PropType } from 'vue';
 import { marked } from 'marked';
 import hljs from 'highlight.js';
 import type { Message } from '~/stores/chatStore';
@@ -122,9 +133,6 @@ renderer.code = function(code: { text: string; lang?: string }): string {
   } else {
     highlightedCode = hljs.highlightAuto(codeText).value;
   }
-  
-  // Создаем уникальный ID для блока кода
-  const blockId = `code-block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   
   // Создаем хедер с названием языка и кнопкой копирования
   const headerHtml = `
@@ -177,7 +185,7 @@ export default defineComponent({
       required: true,
     },
   },
-  emits: ['edit', 'regenerate'],
+  emits: ['edit', 'regenerate', 'createBranch'],
   setup(props, { emit }) {
     const editing = ref(false);
     const editText = ref('');

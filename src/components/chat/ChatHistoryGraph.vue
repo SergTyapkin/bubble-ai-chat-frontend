@@ -51,7 +51,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, onUnmounted, watch, nextTick, type PropType } from 'vue';
+import { defineComponent, ref, onMounted, onUnmounted, watch, nextTick, type PropType, getCurrentInstance } from 'vue';
 import * as d3 from 'd3';
 import type { Message, Branch } from '~/stores/chatStore';
 
@@ -92,6 +92,10 @@ export default defineComponent({
       type: Boolean,
       default: false,
     },
+    isMobile: {
+      type: Boolean,
+      default: false,
+    },
   },
   
   emits: ['messageClick', 'createBranch', 'switchBranch'],
@@ -99,7 +103,6 @@ export default defineComponent({
     const graphContainer = ref<HTMLElement>();
     const svg = ref<SVGSVGElement>();
     const tooltipMessage = ref<(Message & { branchId: string; isActiveBranch: boolean }) | null>(null);
-    const tooltipStyle = ref({ top: '0px', right: '0px' });
     const tooltipWrapperStyle = ref({ top: '0px', right: '0px' });
     let hideTooltipTimeout: ReturnType<typeof setTimeout> | null = null;
     
@@ -557,14 +560,12 @@ export default defineComponent({
       const container = graphContainer.value;
       if (!container) return;
       
-      // const containerRect = container.getBoundingClientRect();
-      const x = -xPos + 150;
-      const y = yPos + 50;
+      // Получаем isMobile из пропсов
+      const isMobile = props.isMobile;
       
-      tooltipStyle.value = {
-        top: '0px',
-        right: '0px',
-      };
+      // const containerRect = container.getBoundingClientRect();
+      const x = -xPos + (isMobile ? 50 : 150);
+      const y = yPos + 50;
       
       tooltipWrapperStyle.value = {
         top: `${y}px`,
@@ -613,7 +614,6 @@ export default defineComponent({
       graphContainer, 
       svg, 
       tooltipMessage, 
-      tooltipStyle,
       tooltipWrapperStyle,
       formatTime,
       handleCreateBranch,
@@ -637,6 +637,8 @@ export default defineComponent({
   bottom 150px
   width chatHistoryWidth
   pointer-events all
+  @media ({mobile})
+    width chatHistoryWidthMobile
   
   svg
     width 100%

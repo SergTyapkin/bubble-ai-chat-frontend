@@ -76,6 +76,7 @@ export default defineComponent({
   height 100%
   position relative
   overflow hidden
+  padding 20px
   
   &__content
     text-align center
