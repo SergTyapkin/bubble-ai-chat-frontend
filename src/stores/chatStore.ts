@@ -422,14 +422,26 @@ export const useChatStore = defineStore('chat', () => {
           };
           if (messageIndex < branch.messages.length - 1) {
             branch.messages.splice(messageIndex + 1);
-            triggerReactivity();
-            generateAIResponse(dialog.id);
           }
+          triggerReactivity();
+          generateAIResponse(dialog.id);
           break;
         }
       }
     }
-    triggerReactivity();
+  }
+
+  function deleteMessage(messageId: string) {
+    for (const dialog of dialogs.value) {
+      for (const branch of dialog.branches) {
+        const messageIndex = branch.messages.findIndex(m => m.id === messageId);
+        if (messageIndex !== -1) {
+          branch.messages.splice(messageIndex, 1);
+          triggerReactivity();
+          break;
+        }
+      }
+    }
   }
 
   function deleteDialog(dialogId: string) {
@@ -477,6 +489,7 @@ export const useChatStore = defineStore('chat', () => {
     sendMessage,
     regenerateMessage,
     editMessage,
+    deleteMessage,
     deleteDialog,
     clearAllDialogs,
     stopGeneration,

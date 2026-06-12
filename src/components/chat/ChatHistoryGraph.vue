@@ -22,8 +22,11 @@
       v-if="tooltipMessage" 
       class="chat-graph__tooltip-wrapper"
       :style="tooltipWrapperStyle"
+      :data-id="tooltipWrapperAttributes.id"
+      :data-branch-id="tooltipWrapperAttributes.branchId"
       @mouseenter="handleTooltipEnter"
       @mouseleave="handleTooltipLeave"
+      @click="handleClickTooltip"
     >
       <div class="chat-graph__tooltip">
         <div class="chat-graph__tooltip-content">
@@ -104,6 +107,7 @@ export default defineComponent({
     const svg = ref<SVGSVGElement>();
     const tooltipMessage = ref<(Message & { branchId: string; isActiveBranch: boolean }) | null>(null);
     const tooltipWrapperStyle = ref({ top: '0px', right: '0px' });
+    const tooltipWrapperAttributes = ref({ id: '', branchId: '' });
     let hideTooltipTimeout: ReturnType<typeof setTimeout> | null = null;
     
     let needsRedraw = false;
@@ -135,105 +139,6 @@ export default defineComponent({
       }, 200);
     }
 
-    function buildTreeStructure(): BranchTreeNode[] {
-      // Находим корневую ветку (без parentMessageId)
-      const rootBranches = props.branches.filter(b => !b.parentMessageId);
-      
-      function buildNode(branch: Branch, visitedBranches: Set<string> = new Set()): BranchTreeNode | null {
-        // Защита от бесконечной рекурсии
-        if (visitedBranches.has(branch.id)) {
-          return null;
-        }
-        visitedBranches.add(branch.id);
-        
-        const branchMessages = props.messages
-          .filter(m => m.branchId === branch.id)
-          .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-
-        const childBranches = props.branches.filter(b => {
-          // Не та же самая ветка
-          if (branch.id === b.id) return false;
-          
-          // Должен быть parentMessageId
-          if (!b.parentMessageId) return false;
-          
-          // Защита от циклов
-          if (visitedBranches.has(b.id)) return false;
-          
-          // Находим сообщение-родитель в текущей ветке
-          const parentMessage = branchMessages.find(m => m.id === b.parentMessageId);
-          if (!parentMessage) return false;
-          
-          // Проверяем, что это сообщение НЕ является первым в какой-либо другой ветке
-          for (const otherBranch of props.branches) {
-            if (otherBranch.id === branch.id) continue;
-            if (otherBranch.id === b.id) continue;
-            
-            // Ищем сообщения этой ветки в props.messages, а не в otherBranch.messages
-            const otherMessages = props.messages
-              .filter(m => m.branchId === otherBranch.id)
-              .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-            
-            if (otherMessages.length > 0 && otherMessages[0].id === b.parentMessageId) {
-              return false; // Это сообщение является первым в другой ветке
-            }
-          }
-          
-          return true;
-        });
-        
-        // Рекурсивно строим дочерние узлы, отфильтровывая null
-        const children = childBranches
-          .map(child => buildNode(child, new Set(visitedBranches)))
-          .filter((node): node is BranchTreeNode => node !== null);
-
-        return {
-          branchId: branch.id,
-          parentBranchId: undefined,
-          messages: branchMessages as GraphNode[],
-          children,
-          x: 0,
-          width: 0,
-        };
-      }
-      
-      return rootBranches
-        .map(branch => buildNode(branch))
-        .filter((node): node is BranchTreeNode => node !== null);
-    }
-
-    function calculateTreeLayout(tree: BranchTreeNode[], innerWidth: number): void {
-      // Рекурсивно вычисляем ширину поддеревьев
-      function calcWidth(node: BranchTreeNode): number {
-        if (node.children.length === 0) {
-          node.width = 1;
-          return 1;
-        }
-        node.width = node.children.reduce((sum, child) => sum + calcWidth(child), 0);
-        return node.width;
-      }
-      
-      tree.forEach(calcWidth);
-      
-      // Распределяем x-координаты
-      let currentX = 0;
-      function assignX(node: BranchTreeNode) {
-        const halfWidth = node.width / 2;
-        node.x = currentX + halfWidth;
-        
-        let childX = currentX;
-        for (const child of node.children) {
-          child.x = 0; // Временно
-          assignX(child);
-          childX += child.width;
-        }
-        
-        currentX += node.width;
-      }
-      
-      tree.forEach(assignX);
-    }
-
     function drawGraph() {
       if (!svg.value || !graphContainer.value || !props.messages.length) return;
       
@@ -247,7 +152,8 @@ export default defineComponent({
       
       svgElement.selectAll('*').remove();
       
-      const margin = { top: 15, right: 25, bottom: 15, left: 25 };
+      const horMargin = props.isMobile ? 5 : 20;
+      const margin = { top: 15, right: horMargin, bottom: 15, left: horMargin };
       const mainGroup = svgElement.append('g')
         .attr('transform', `translate(${margin.left}, ${margin.top})`);
       
@@ -348,6 +254,7 @@ export default defineComponent({
       const maxDepth = Math.max(...[...nodePositions.values()].map(p => p.y), 1);
       
       const spacingX = innerWidth / totalLeaves;
+      console.log(spacingX, innerWidth, totalLeaves)
       const spacingY = innerHeight / (maxDepth + 1);
       
       // Конвертируем позиции в координаты на экране
@@ -358,9 +265,10 @@ export default defineComponent({
         if (!msg) continue;
         
         const screenY = spacingY * pos.y + spacingY / 2;
+        const xOffset = props.isMobile ? 5 : 15;
         const screenX = msg.isUser 
-          ? (pos.x + 0.5) * spacingX + 15
-          : (pos.x + 0.5) * spacingX - 15;
+          ? (pos.x + 0.5) * spacingX + xOffset
+          : (pos.x + 0.5) * spacingX - xOffset;
         
         const graphNode: GraphNode = {
           ...msg,
@@ -414,10 +322,9 @@ export default defineComponent({
         .style('cursor', 'pointer')
         .on('click', (event: MouseEvent, d: GraphNode) => {
           event.stopPropagation();
-          if (!d.isActiveBranch) {
-            emit('switchBranch', d.branchId);
-          }
-          emit('messageClick', d.id);
+          if (props.isMobile) return;
+
+          handleClickMessage(d.branchId, d.id);
         })
         .on('mouseenter', function(_event: MouseEvent, d: GraphNode) {
           if (hideTooltipTimeout) {
@@ -438,6 +345,7 @@ export default defineComponent({
           
           tooltipMessage.value = d;
           updateTooltipPosition(d.x, d.y);
+          updateTooltipAttributes(d.id, d.branchId);
         })
         .on('mouseleave', function() {
           d3.select(this).select('.node-circle')
@@ -556,7 +464,7 @@ export default defineComponent({
       }, 50);
     }
 
-    function updateTooltipPosition(xPos: number, yPos: number, event?: MouseEvent) {
+    function updateTooltipPosition(xPos: number, yPos: number) {
       const container = graphContainer.value;
       if (!container) return;
       
@@ -565,11 +473,21 @@ export default defineComponent({
       
       // const containerRect = container.getBoundingClientRect();
       const x = -xPos + (isMobile ? 50 : 150);
-      const y = yPos + 50;
+      const y = yPos + (isMobile ? 80 : 50);
       
       tooltipWrapperStyle.value = {
         top: `${y}px`,
         right: `${x}px`,
+      };
+    }
+
+    function updateTooltipAttributes(id: string, branchId: string) {
+      const container = graphContainer.value;
+      if (!container) return;
+      
+      tooltipWrapperAttributes.value = {
+        id, 
+        branchId,
       };
     }
 
@@ -582,6 +500,24 @@ export default defineComponent({
           nextTick(() => drawGraph());
         }
       }, 100);
+    }
+
+    function handleClickMessage(branchId: string, messageId: string) {
+      if (!tooltipMessage.value?.isActiveBranch) {
+        emit('switchBranch', branchId);
+      }
+      emit('messageClick', messageId);
+    }
+
+    // На мобилке засчитываем только 2 и последующие клики по тултипу соощбения
+    let prevTooltipMessageId = '';
+    function handleClickTooltip() {
+      if (!props.isMobile) return;
+      const {id, branchId} = tooltipWrapperAttributes.value;
+      if (prevTooltipMessageId === id) {
+        handleClickMessage(branchId, id);
+      }
+      prevTooltipMessageId = id;
     }
 
     onMounted(() => {
@@ -615,10 +551,13 @@ export default defineComponent({
       svg, 
       tooltipMessage, 
       tooltipWrapperStyle,
+      tooltipWrapperAttributes,
       formatTime,
       handleCreateBranch,
       handleTooltipEnter,
       handleTooltipLeave,
+      handleClickTooltip,
+      handleClickMessage,
     };
   },
 });

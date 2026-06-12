@@ -3,7 +3,8 @@
     class="chat-message"
     :class="{ 
       'chat-message--user': message.isUser,
-      'chat-message--bot': !message.isUser 
+      'chat-message--bot': !message.isUser,
+      'chat-message--in-editing': editing, 
     }"
     :data-message-id="message.id"
   >
@@ -16,8 +17,8 @@
             class="chat-message__edit-input"
             @keydown.enter.prevent="saveEdit"
             @keydown.escape="cancelEdit"
-            rows="3"
-          ></textarea>
+            rows="6"
+          />
           <div class="chat-message__edit-actions">
             <button class="chat-message__edit-save" @click="saveEdit">Сохранить</button>
             <button class="chat-message__edit-cancel" @click="cancelEdit">Отмена</button>
@@ -33,7 +34,7 @@
         />
         
         <!-- Обычный текст для пользовательских сообщений -->
-        <span v-else>{{ message.content }}</span>
+        <span v-else class="chat-message__no-markdown" >{{ message.content }}</span>
       </div>
       
       <div class="chat-message__meta">
@@ -60,8 +61,8 @@
 
           <button 
             class="chat-message__action-btn"
-            @click="copyContent"
-            title="Копировать"
+            @click="copyPlainText"
+            title="Копировать текст"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <rect x="4" y="4" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/>
@@ -71,6 +72,16 @@
 
           <button 
             class="chat-message__action-btn"
+            @click="copyMarkdown"
+            title="Копировать с Markdown"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M2 5H9M2 8H12M2 11H7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+
+          <button 
+            class="chat-message__action-btn chat-message__action-btn--branch"
             @click="$emit('createBranch', message.id);"
             title="Создать ответвление"
           >
@@ -78,6 +89,16 @@
             <path d="M3 3V10C3 10.5523 3.44772 11 4 11H10.5M10.5 11L8 8.5M10.5 11L8 13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M13 5V3H11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
+          </button>
+
+          <button 
+            class="chat-message__action-btn chat-message__action-btn--delete"
+            @click="$emit('delete', message.id)"
+            title="Удалить"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M2 4H12M5 4V3C5 2.44772 5.44772 2 6 2H8C8.55228 2 9 2.44772 9 3V4M11 4V11C11 11.5523 10.5523 12 10 12H4C3.44772 12 3 11.5523 3 11V4H11Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </button>
         </template>
         
@@ -95,12 +116,22 @@
 
           <button 
             class="chat-message__action-btn"
-            @click="copyContent"
-            title="Копировать"
+            @click="copyPlainText"
+            title="Копировать текст"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <rect x="4" y="4" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/>
               <path d="M2 10V3C2 2.44772 2.44772 2 3 2H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+
+          <button 
+            class="chat-message__action-btn chat-message__action-btn--delete"
+            @click="$emit('delete', message.id)"
+            title="Удалить"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M2 4H12M5 4V3C5 2.44772 5.44772 2 6 2H8C8.55228 2 9 2.44772 9 3V4M11 4V11C11 11.5523 10.5523 12 10 12H4C3.44772 12 3 11.5523 3 11V4H11Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
         </template>
@@ -185,7 +216,7 @@ export default defineComponent({
       required: true,
     },
   },
-  emits: ['edit', 'regenerate', 'createBranch'],
+  emits: ['edit', 'regenerate', 'createBranch', 'delete'],
   setup(props, { emit }) {
     const editing = ref(false);
     const editText = ref('');
@@ -206,7 +237,12 @@ export default defineComponent({
       editText.value = props.message.content;
     }
 
-    function saveEdit() {
+    function saveEdit(evt?: KeyboardEvent) {
+      if (evt?.shiftKey || evt?.ctrlKey) {
+        editText.value += '\n';
+        return;
+      }
+
       if (editText.value.trim() && editText.value.trim() !== props.message.content) {
         emit('edit', props.message.id, editText.value.trim());
       }
@@ -218,9 +254,25 @@ export default defineComponent({
       editText.value = '';
     }
 
-    function copyContent() {
+    // Копирует чистый текст (без markdown), извлекая текст из рендеренного HTML
+    function copyPlainText() {
+      if (markdownContainer.value) {
+        const plainText = markdownContainer.value.textContent || '';
+        navigator.clipboard.writeText(plainText).catch(err => {
+          console.error('Failed to copy plain text:', err);
+        });
+      } else {
+        // Для пользовательских сообщений (без markdown) копируем контент напрямую
+        navigator.clipboard.writeText(props.message.content).catch(err => {
+          console.error('Failed to copy text:', err);
+        });
+      }
+    }
+
+    // Копирует оригинальный markdown
+    function copyMarkdown() {
       navigator.clipboard.writeText(props.message.content).catch(err => {
-        console.error('Failed to copy text:', err);
+        console.error('Failed to copy markdown:', err);
       });
     }
 
@@ -239,7 +291,8 @@ export default defineComponent({
       startEdit, 
       saveEdit, 
       cancelEdit, 
-      copyContent,
+      copyPlainText,
+      copyMarkdown,
       formatTime 
     };
   },
@@ -267,7 +320,9 @@ export default defineComponent({
     .chat-message__bubble
       max-width 70%
       background mix(colorBg, colorEmp2, 85%)
-      border 1px solid mix(colorBg, colorEmp2, 70%)
+      
+    .chat-message__actions
+      right -10px
       
   &--bot
     justify-content flex-start
@@ -275,8 +330,13 @@ export default defineComponent({
     .chat-message__bubble
       max-width 95%
       background mix(colorBg, white, 95%)
-      border 1px solid mix(colorBg, white, 92%)
       
+    .chat-message__actions
+      right -10px
+      
+  &--in-editing
+    .chat-message__bubble
+      width 100%
       
   &__bubble
     padding 12px 16px
@@ -292,7 +352,10 @@ export default defineComponent({
     line-height 1.5
     color colorText1
     word-break break-word
-    
+
+  &__no-markdown  
+    white-space pre-wrap
+
   &__markdown
     :deep(h1), :deep(h2), :deep(h3), :deep(h4), :deep(h5), :deep(h6)
       font-family ALS-Sector, Roboto, monospace
@@ -419,12 +482,10 @@ export default defineComponent({
     top -10px
     display flex
     flex-direction column
-    gap 4px
+    gap 2px
     opacity 0
     visibility hidden
     trans(0.15s)
-    left auto
-    right -10px
     
   &__action-btn
     button-no-styles()
@@ -442,21 +503,29 @@ export default defineComponent({
       background lighten(colorBg, 10%)
       border-color colorEmp2
       
+    &--delete:hover
+      color colorError
+      border-color colorError
+      background rgba(colorError, 0.15)
+      
   &__edit-input
     input-no-styles()
-    width 100%
+    width calc(100% + 32px)
     font-small()
     color colorText1
-    padding 8px
+    padding 12px 16px
     border-radius radiusS
     background rgba(white, 0.05)
-    resize vertical
+    resize none
     min-height 60px
+    margin-top -12px
+    margin-left -16px
+    line-height 1.5
     
   &__edit-actions
     display flex
     gap 8px
-    margin-top 8px
+    margin-top 2px
     
     button
       button()

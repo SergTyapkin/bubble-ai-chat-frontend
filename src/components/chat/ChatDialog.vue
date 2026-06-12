@@ -43,6 +43,7 @@
             @edit="handleEditMessage"
             @regenerate="handleRegenerateMessage"
             @create-branch="handleCreateBranch"
+            @delete="handleDeleteMessage"
           />
         </TransitionGroup>
         
@@ -136,7 +137,12 @@ export default defineComponent({
       return 'Что интересует вас сегодня?';
     }
 
-    function handleSendOrStop() {
+    function handleSendOrStop(evt?: KeyboardEvent) {
+      if (evt?.shiftKey || evt?.ctrlKey) {
+        messageText.value += '\n';
+        return;
+      }
+
       if (store.isGenerating) {
         store.stopGeneration();
         return;
@@ -165,6 +171,10 @@ export default defineComponent({
       store.editMessage(messageId, newContent);
     }
 
+    function handleDeleteMessage(messageId: string) {
+      store.deleteMessage(messageId);
+    }
+
     function handleCreateBranch(messageId: string) {
       store.createBranch(messageId);
     }
@@ -183,6 +193,11 @@ export default defineComponent({
       if (messagesContainer.value) {
         messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
       }
+    }
+
+    function checkIfScrolledToBottom() {
+      if (!messagesContainer.value) return true;
+      return messagesContainer.value.scrollTop >= messagesContainer.value.scrollHeight - messagesContainer.value.clientHeight - 30; // 30px - offset
     }
 
     function handleGraphMessageClick(messageId: string) {
@@ -230,12 +245,13 @@ export default defineComponent({
       }
     );
 
+    // При обновлении последнего сообщения, крутим вниз диалог, если он уже внизу
     watch(
       () => {
         const messages = store.activeMessages;
         if (!messages || messages.length === 0) return '';
         const lastMessage = messages[messages.length - 1];
-        return lastMessage.content;
+        return checkIfScrolledToBottom() ? lastMessage.content : null;
       },
       () => {
         nextTick(() => {
@@ -254,6 +270,7 @@ export default defineComponent({
       getPlaceholder,
       handleSendOrStop,
       handleEditMessage,
+      handleDeleteMessage,
       handleRegenerateMessage,
       handleCreateBranch,
       handleSwitchBranch,
@@ -429,15 +446,14 @@ export default defineComponent({
   transition all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)
 
 .message-list-leave-active
-  transition all 0.3s ease-in
+  display none
 
 .message-list-enter-from
   transform translateY(20px) scale(0.95)
   opacity 0
 
 .message-list-leave-to
-  transform translateX(-30px)
-  opacity 0
+  display none
 
 .message-list-move
   transition transform 0.3s ease

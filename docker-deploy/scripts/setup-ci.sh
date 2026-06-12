@@ -1,3 +1,6 @@
+source ./docker-deploy/scripts/_echo-colors.sh &&
+echo_header "Setup CI" &&
+
 #id -u github &>/dev/null || sudo adduser github # Add user if not exists
 #sudo chown -R github:legend .
 #sudo -u github ssh-keygen
@@ -19,10 +22,12 @@
 #echo 'Add this public rsa key to Deploy keys in your github directory: ' && \
 #sudo cat /home/github/.ssh/id_rsa.pub
 
+key_name="$(. "./.env"; eval "echo \${FRONTEND_COMPOSE_NAME}" | tr -dc "a-zA-Z0-9_.-")" &&
+
 echo "Now we generate new SSH key with name \"${key_name}\" and adds it into ~/.ssh/authorized_keys to access github actions on this computer" &&
 echo '[press Enter...]' &&
 read ENTER &&
-key_name="$(. "./.env"; eval "echo \${VITE_DEPLOY_HOSTNAME}" | tr -dc "a-zA-Z0-9_.-")" &&
+
 ssh-keygen -f "/tmp/${key_name}" &&
 sudo mkdir -p ~/.ssh &&
 sudo cat "/tmp/${key_name}.pub" | sudo tee -a ~/.ssh/authorized_keys > /dev/null &&
