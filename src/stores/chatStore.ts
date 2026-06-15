@@ -1,7 +1,7 @@
 // src/stores/chatStore.ts
 import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue';
-import { NEURO_SYSTEM_SETTING_PROMPT } from '~/constants';
+import { NEURO_SYSTEM_SETTING_PROMPT, OPENROUTER_SELECTED_MODEL } from '~/constants';
 import { streamChatCompletion } from '~/utils/openRouter';
 
 export interface Message {
@@ -94,7 +94,7 @@ export const useChatStore = defineStore('chat', () => {
   const isGenerating = ref(false);
   const isWaitingForResponse = ref(false);
   const showFullscreenGraph = ref(false);
-  const selectedModel = ref<string>('deepseek/deepseek-r1');
+  const selectedModel = ref<string>(OPENROUTER_SELECTED_MODEL);
   const temperature = ref<number>(0.7);
   let abortController: AbortController | null = null;
 
